@@ -5,6 +5,11 @@ import io
 
 app = Flask(__name__)
 
+@app.route('/')
+def home():
+    return "Radar Chart API is running!"
+
+
 @app.route('/radar', methods=['POST'])
 def radar_chart():
     data = request.json
