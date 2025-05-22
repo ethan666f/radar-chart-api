@@ -2,6 +2,7 @@ from flask import Flask, request, send_file, jsonify
 import matplotlib.pyplot as plt
 import numpy as np
 import io
+import os
 
 app = Flask(__name__)
 
@@ -9,19 +10,28 @@ app = Flask(__name__)
 def home():
     return "Radar Chart API is running!"
 
-
 @app.route('/radar', methods=['POST'])
 def radar_chart():
     data = request.json
 
-    # Validate input
-    scores = data.get("scores")
+    raw_scores = data.get("scores")
     labels = data.get("labels")
 
-    if not scores or len(scores) != 8:
-        return jsonify({"error": "Exactly 8 scores are required."}), 400
+    # Handle scores from string or list
+    if isinstance(raw_scores, str):
+        try:
+            scores = [int(x.strip()) for x in raw_scores.split(',')]
+        except ValueError:
+            return jsonify({"error": "Scores must be integers."}), 400
+    elif isinstance(raw_scores, list):
+        scores = raw_scores
+    else:
+        return jsonify({"error": "Invalid scores format."}), 400
 
-    if not labels:
+    if len(scores) != 8:
+        return jsonify({"error": f"Exactly 8 scores are required, received {len(scores)}."}), 400
+
+    if not labels or len(labels) != 8:
         labels = [f"Q{i+1}" for i in range(8)]
 
     # Radar chart math
@@ -45,8 +55,7 @@ def radar_chart():
 
     return send_file(img_bytes, mimetype='image/png')
 
-import os
-
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
+
